@@ -1,7 +1,8 @@
 typedef unsigned char	byte;
 #define BUFFERSIZE 4096
 #define OFFSIZE 0x0E
-
+#define ERROR 8192
+#define PENCOLOR (char)0xBB
 /*文件头结构*/
 typedef struct tagBITMAPFILEHEADER
 {
