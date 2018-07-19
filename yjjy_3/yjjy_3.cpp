@@ -3,6 +3,15 @@
 
 #include "stdafx.h"
 #include"yjjy_3.h"
+void print(char ch)
+{
+	_AL = ch;
+	_asm {
+		sub dx, dx;
+		xor ah, ah;
+		int 17h;
+	}
+}
 void Show_Bmpif(FILE* fp)
 {
 	BITMAPFILEHEADER fh;
@@ -94,19 +103,78 @@ void Write_String(FILE* fp,int offset ,int x,int y)
 int main()
 
 {
+	int colors, i, j, k, t;
+	unsigned char bp[8][8] = {
+		0,32,8,40,2,34,10,42,
+		48,16,56,24,50,18,58,26,
+		12,44,4,36,14,46,6,38,
+		60,28,52,20,62,30,54,22,
+		3,35,11,43,1,33,9,41,
+		51,19,59,27,49,17,57,25,
+		15,47,7,39,13,45,5,37,
+		63,31,55,23,61,29,53,21
+	};
+	unsigned char name[100], buffer[8][1000], *real, gray[256];
 	FILE* fp,*nfp;
-	long dataoff;
+	long dataoff,linebytes;
+	unsigned long offset;
+	unsigned char u, m;
+	BITMAPFILEHEADER	fh;
+	BITMAPINFOHEADER	ih;
+	RGBQUAD				rgb[256];
 	if ((fp = fopen("k398a.bmp", "rb")) == NULL) {
 		printf("file error!\n");
 		exit(0);
 	}
 	
-	//Show_Bmpif(fp);
+	Show_Bmpif(fp);
 	nfp=Copy_Bmp(fp);
 	fseek(nfp, 0xA, SEEK_SET);
 	fread(&dataoff, 1, sizeof(dataoff), nfp);
-	
-	Write_String(nfp, dataoff, 100, 100);
+
+	fseek(nfp, 0, SEEK_SET);
+	fread(&fh, 1, sizeof(BITMAPFILEHEADER), nfp);
+	fseek(nfp, OFFSIZE, SEEK_SET);//神奇的字节对齐
+	fread(&ih, 1, sizeof(BITMAPINFOHEADER), nfp);
+	fread(rgb, sizeof(RGBQUAD), 256, nfp);
+	for ( i = 0; i < 256; i++)
+	{
+		gray[i] = (int)(rgb[i].rgbRed*0.30 + rgb[i].rgbGreen*0.59 + rgb[i].rgbBlue*0.11) >> 2;
+
+	}
+	linebytes = (ih.biWidth*ih.biBitCount + 31) / 32 * 4;
+	real = (unsigned char*)malloc(linebytes);
+	for ( k = 0; k < ih.biHeight/8; k++)
+	{
+		for ( i = 0; i < 8; i++)
+		{
+			fread(buffer[i], linebytes, 1, nfp);
+			
+		}
+		for ( i = 0; i < linebytes; i++)
+		{
+			u = 0;
+			for ( j = 0; j < 8; j++)
+			{
+				m = (gray[buffer[j][i]] <= bp[j][i % 8]) << (7 - j);
+				u = u | m;
+			}
+			real[i] = u;
+		}
+		print(27); print(42); print(0);
+		print((unsigned char)(linebytes) & 0x0FF);
+		print((unsigned char)(linebytes >> 8) & 0x0FF);
+
+		for (i = linebytes - 1; i >= 0; i--)print(real[i]);
+
+		print(13);
+		print(27); print(74); print(23);
+
+	}
+	if ()
+	{
+
+	}
 	return 0;
 }
 
