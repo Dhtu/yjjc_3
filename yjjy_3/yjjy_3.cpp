@@ -3,15 +3,7 @@
 
 #include "stdafx.h"
 #include"yjjy_3.h"
-void print(char ch)
-{
-	_AL = ch;
-	_asm {
-		sub dx, dx;
-		xor ah, ah;
-		int 17h;
-	}
-}
+
 void Show_Bmpif(FILE* fp)
 {
 	BITMAPFILEHEADER fh;
@@ -99,68 +91,102 @@ void Write_String(FILE* fp,int offset ,int x,int y)
 
 }
 
-
-int main()
-
+void print(char ch)
 {
-	int colors, i, j, k, t;
-	unsigned char bp[8][8] = {
-		0,32,8,40,2,34,10,42,
+	/*_AL = ch;
+	_asm {
+		sub   dx, dx
+		xor   ah, ah
+		int   17h
+	}*/
+}
+
+void Print_Bmp(FILE* fp)
+{
+	BITMAPFILEHEADER    fh;
+	BITMAPINFOHEADER    bh;
+	RGBQUAD             rgb[256];
+	unsigned char bp[8][8] = { 0,32, 8,40, 2,34,10,42,
 		48,16,56,24,50,18,58,26,
-		12,44,4,36,14,46,6,38,
+		12,44, 4,36,14,46, 6,38,
 		60,28,52,20,62,30,54,22,
-		3,35,11,43,1,33,9,41,
+		3,35,11,43, 1,33, 9,41,
 		51,19,59,27,49,17,57,25,
-		15,47,7,39,13,45,5,37,
+		15,47, 7,39,13,45, 5,37,
 		63,31,55,23,61,29,53,21
 	};
-	unsigned char name[100], buffer[8][1000], *real, gray[256];
-	FILE* fp,*nfp;
-	long dataoff,linebytes;
+	unsigned char name[100], buffer[8][1000], *real, grey[256];
 	unsigned long offset;
+	long linebytes;
+	int colors, i, j, k, t;
 	unsigned char u, m;
-	BITMAPFILEHEADER	fh;
-	BITMAPINFOHEADER	ih;
-	RGBQUAD				rgb[256];
-	if ((fp = fopen("k398a.bmp", "rb")) == NULL) {
-		printf("file error!\n");
-		exit(0);
-	}
-	
-	Show_Bmpif(fp);
-	nfp=Copy_Bmp(fp);
-	fseek(nfp, 0xA, SEEK_SET);
-	fread(&dataoff, 1, sizeof(dataoff), nfp);
 
-	fseek(nfp, 0, SEEK_SET);
-	fread(&fh, 1, sizeof(BITMAPFILEHEADER), nfp);
-	fseek(nfp, OFFSIZE, SEEK_SET);//神奇的字节对齐
-	fread(&ih, 1, sizeof(BITMAPINFOHEADER), nfp);
-	fread(rgb, sizeof(RGBQUAD), 256, nfp);
-	for ( i = 0; i < 256; i++)
-	{
-		gray[i] = (int)(rgb[i].rgbRed*0.30 + rgb[i].rgbGreen*0.59 + rgb[i].rgbBlue*0.11) >> 2;
+	/*printf("Input filename:");
+	gets(name);*/
 
-	}
-	linebytes = (ih.biWidth*ih.biBitCount + 31) / 32 * 4;
+	fseek(fp, 0, SEEK_SET);
+	fread(&fh, sizeof(fh), 1, fp);
+	fseek(fp, OFFSIZE, SEEK_SET);
+	fread(&bh, sizeof(bh), 1, fp);
+
+	printf("%ld %ld\n", bh.biWidth, bh.biHeight);
+	printf("%d\n", bh.biBitCount);
+
+	colors = 1 << bh.biBitCount;
+
+	fread(&rgb, sizeof(RGBQUAD), colors, fp);
+
+	for (i = 0; i<colors; i++)
+
+		printf("%3d: %3d, %3d, %3d\n", i, rgb[i].rgbRed, rgb[i].rgbGreen, rgb[i].rgbBlue);
+
+
+	getchar();
+	for (i = 0; i<256; i++)
+		grey[i] = (rgb[i].rgbRed*0.30 + rgb[i].rgbGreen*0.59 + rgb[i].rgbBlue*0.11) / 4;
+
+	linebytes = (bh.biWidth*bh.biBitCount + 7) >>8;
 	real = (unsigned char*)malloc(linebytes);
-	for ( k = 0; k < ih.biHeight/8; k++)
-	{
-		for ( i = 0; i < 8; i++)
-		{
-			fread(buffer[i], linebytes, 1, nfp);
-			
-		}
-		for ( i = 0; i < linebytes; i++)
-		{
+	for (k = 0; k<bh.biHeight / 8; k++) {
+		for (i = 0; i<8; i++)
+			fread(buffer[i], linebytes, 1, fp);
+		for (i = 0; i<linebytes; i++) {
 			u = 0;
-			for ( j = 0; j < 8; j++)
-			{
-				m = (gray[buffer[j][i]] <= bp[j][i % 8]) << (7 - j);
+			for (j = 0; j<8; j++) {
+				m = (grey[buffer[j][i]] <= bp[j][i % 8]) << (7 - j);
 				u = u | m;
 			}
 			real[i] = u;
 		}
+		    for(i=0;i<linebytes;i++)printf("%x  ",real[i]);
+		     getchar();
+		print(27); print(42); print(0);
+		print((unsigned char)(linebytes) & 0x0FF);
+		print((unsigned char)(linebytes >> 8) & 0x0FF);
+
+		for (i = linebytes - 1; i >= 0; i--)print(real[i]);
+
+		print(13);
+		print(27); print(74); print(23);
+	}
+
+	if (bh.biHeight % 8) {
+		for (i = 0; i<bh.biHeight % 8; i++)
+			fread(buffer[i], linebytes, 1, fp);
+		for (i = bh.biHeight % 8; i<8; i++)
+			for (j = 0; j<linebytes; j++)
+				buffer[i][j] = 0;
+
+		for (i = 0; i<linebytes; i++) {
+			u = 0;
+			for (j = 0; j<8; j++) {
+				m = (grey[buffer[j][i]] <= bp[j & 7][i & 7]) << (7 - j);
+				u = u | m;
+			}
+			real[i] = u;
+			printf("%x",real[i]);
+		}
+		  getchar();
 		print(27); print(42); print(0);
 		print((unsigned char)(linebytes) & 0x0FF);
 		print((unsigned char)(linebytes >> 8) & 0x0FF);
@@ -171,10 +197,113 @@ int main()
 		print(27); print(74); print(23);
 
 	}
-	if ()
-	{
 
-	}
-	return 0;
+
+
 }
+void Print_Bmp2(FILE* fp)
+{
+	BITMAPFILEHEADER    fh;
+	BITMAPINFOHEADER    bh;
+	RGBQUAD             rgb[256];
+	unsigned char bp[8][8] = { 0,32, 8,40, 2,34,10,42,
+		48,16,56,24,50,18,58,26,
+		12,44, 4,36,14,46, 6,38,
+		60,28,52,20,62,30,54,22,
+		3,35,11,43, 1,33, 9,41,
+		51,19,59,27,49,17,57,25,
+		15,47, 7,39,13,45, 5,37,
+		63,31,55,23,61,29,53,21
+	};
+	unsigned char name[100], buffer[8][1000], *real, grey[256];
+	unsigned long offset;
+	long linebytes;
+	int colors, i, j, k, t;
+	unsigned char u, m;
+	char bpen=(char)0x00,wpen=(char)0xFF;
+	
 
+	
+	fseek(fp, 0xA, SEEK_SET);
+	fread(&offset, 1, sizeof(offset), fp);
+	fseek(fp, 0, SEEK_SET);
+	fread(&fh, sizeof(fh), 1, fp);
+	fseek(fp, OFFSIZE, SEEK_SET);
+	fread(&bh, sizeof(bh), 1, fp);
+
+	printf("%ld %ld\n", bh.biWidth, bh.biHeight);
+	printf("%d\n", bh.biBitCount);
+
+	colors = 1 << bh.biBitCount;
+
+	fread(&rgb, sizeof(RGBQUAD), colors, fp);
+
+	/*for (i = 0; i<colors; i++)
+		printf("%3d: %3d, %3d, %3d\n", i, rgb[i].rgbRed>>2, rgb[i].rgbGreen>>2, rgb[i].rgbBlue>>2);
+*/
+
+	for (i = 0; i < 256; i++) {
+		grey[i] = (rgb[i].rgbRed*0.30 + rgb[i].rgbGreen*0.59 + rgb[i].rgbBlue*0.11) / 4;
+		//printf("%3d:%3d\n",i, grey[i]);
+	}
+	
+	linebytes = (bh.biWidth*bh.biBitCount + 7) >> 3;
+	fseek(fp, offset, SEEK_SET);
+	for (k = 0; k<bh.biHeight / 8; k++) {
+		t = 0;
+		fseek(fp, offset + 8 * k * 300, SEEK_SET);
+		for (i = 0; i < 8; i++) {
+			
+			fread(buffer[i], linebytes, 1, fp);
+		}
+		for (i = 0; i<linebytes; i++) {
+			for (j = 0; j<8; j++) {
+				if (i==0)
+				{
+					printf("%3d", buffer[j][i]);
+				}
+				
+				if (grey[buffer[j][i]] <= bp[j][i % 8])
+				{
+					fseek(fp, offset + (8*k+j)*300+i, SEEK_SET);
+					fwrite(&bpen, 1, 1, fp);
+				}
+				else
+				{
+					fseek(fp, offset + (8 * k + j) * 300 + i, SEEK_SET);
+					fwrite(&wpen, 1, 1, fp);
+				}
+			}
+			if (i==0)
+			{
+				printf("\n");
+			}
+		}
+		
+	}
+
+	if (bh.biHeight % 8) {
+		for (i = 0; i < bh.biHeight % 8; i++)
+			fread(buffer[i], linebytes, 1, fp);
+		for (i = bh.biHeight % 8; i < 8; i++)
+			for (j = 0; j < linebytes; j++)
+				//buffer[i][j] = 0;
+
+		for (i = 0; i < linebytes; i++) {
+			u = 0;
+			for (j = 0; j < 8; j++) {
+				if (grey[buffer[j][i]] <= bp[j][i % 8])
+				{
+					fseek(fp, offset + (8 * (k + 1) + j) * 300 + i, SEEK_SET);
+					fwrite(&bpen, 1, 1, fp);
+				}
+				else
+				{
+					fseek(fp, offset + (8 * (k + 1) + j) * 300 + i, SEEK_SET);
+					fwrite(&wpen, 1, 1, fp);
+				}
+			}
+
+		}
+	}
+}

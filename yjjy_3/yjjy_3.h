@@ -1,8 +1,11 @@
+#ifndef YJJY
+#define YJJY
 typedef unsigned char	byte;
 #define BUFFERSIZE 4096
 #define OFFSIZE 0x0E
 #define ERROR 8192
 #define PENCOLOR (char)0xBB
+#define BLACK (char)
 /*文件头结构*/
 typedef struct tagBITMAPFILEHEADER
 {
@@ -32,8 +35,16 @@ typedef struct tagBITMAPINFOHEADER
 /*调色板*/
 typedef struct tagRGBQUAD
 {
-	char rgbBlue; /*蓝色分量*/
-	char rgbGreen; /*绿色分量*/
-	char rgbRed; /*红色分量*/
-	char rgbReserved; /*保留*/
+	unsigned char rgbBlue; /*蓝色分量*/
+	unsigned char rgbGreen; /*绿色分量*/
+	unsigned char rgbRed; /*红色分量*/
+	unsigned char rgbReserved; /*保留*/
 } RGBQUAD;
+void Show_Bmpif(FILE* fp);
+FILE* Copy_Bmp(FILE* fp);
+void Write_String(FILE* fp, int offset, int x, int y);
+void print(char ch);
+void Print_Bmp(FILE* fp);
+void Print_Bmp2(FILE* fp);
+#else
+#endif // !YJJY
