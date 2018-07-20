@@ -33,15 +33,19 @@ FILE* Copy_Bmp(FILE* fp)
 	return nfp;
 
 }
-void Write_String(FILE* fp,int offset ,int x,int y)
+void Write_String(FILE* fp,int x,int y)
 {
 	int i, j, k, m, q, w, ofs;
 	unsigned char s[80] = "¶¡ºº¶¼", u[32];
 	FILE *cfp;
+	int offset;
 	char pencil;
+	char bpen = (char)0x00, wpen = (char)0xFF;
 	char *pen = &pencil;
 	*pen = PENCOLOR;
-
+	fseek(fp, 0xA, SEEK_SET);
+	fread(&offset, 1, sizeof(offset), fp);
+	fseek(fp, 0, SEEK_SET);
 	for (k = 0; s[k] != 0; k = k + 2)
 	{
 		q = s[k] - 0xA1;
@@ -63,10 +67,14 @@ void Write_String(FILE* fp,int offset ,int x,int y)
 				{
 					if (u[2 * i] & m)
 					{
-						fseek(fp, offset + (400-(i+y)) * 300 + (k*16+j + x), SEEK_SET);
+						fseek(fp, offset + (400-(i+y)) * 300 + (k*8+j + x), SEEK_SET);
 						fwrite(pen, 1, 1, fp);
 					}
-					
+					else
+					{
+						fseek(fp, offset + (400 - (i + y)) * 300 + (k * 8 + j + x), SEEK_SET);
+						fwrite(&wpen, 1, 1, fp);
+					}
 					m >>= 1;
 				}
 				m = 0x80;
@@ -74,11 +82,15 @@ void Write_String(FILE* fp,int offset ,int x,int y)
 				{
 					if (u[2 * i + 1] & m)
 					{
-						fseek(fp, offset + (400-(i + y)) * 300 + (k*16+j + 8 + x), SEEK_SET);
+						fseek(fp, offset + (400-(i + y)) * 300 + (k*8+j + 8 + x), SEEK_SET);
 						fwrite(pen, 1, 1, fp);
 						
 					}
-					
+					else
+					{
+						fseek(fp, offset + (400 - (i + y)) * 300 + (k * 8 + j+8 + x), SEEK_SET);
+						fwrite(&wpen, 1, 1, fp);
+					}
 					m >>= 1;
 				}
 				
@@ -250,7 +262,7 @@ void Print_Bmp2(FILE* fp)
 	linebytes = (bh.biWidth*bh.biBitCount + 7) >> 3;
 	fseek(fp, offset, SEEK_SET);
 	for (k = 0; k<bh.biHeight / 8; k++) {
-		t = 0;
+		//t = 0;
 		fseek(fp, offset + 8 * k * 300, SEEK_SET);
 		for (i = 0; i < 8; i++) {
 			
@@ -260,7 +272,7 @@ void Print_Bmp2(FILE* fp)
 			for (j = 0; j<8; j++) {
 				if (i==0)
 				{
-					printf("%3d", buffer[j][i]);
+					//printf("%3d", buffer[j][i]);
 				}
 				
 				if (grey[buffer[j][i]] <= bp[j][i % 8])
@@ -276,7 +288,7 @@ void Print_Bmp2(FILE* fp)
 			}
 			if (i==0)
 			{
-				printf("\n");
+				//printf("\n");
 			}
 		}
 		

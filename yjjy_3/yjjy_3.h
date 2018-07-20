@@ -4,7 +4,7 @@ typedef unsigned char	byte;
 #define BUFFERSIZE 4096
 #define OFFSIZE 0x0E
 #define ERROR 8192
-#define PENCOLOR (char)0xBB
+#define PENCOLOR (char)0x00
 #define BLACK (char)
 /*文件头结构*/
 typedef struct tagBITMAPFILEHEADER
@@ -42,7 +42,7 @@ typedef struct tagRGBQUAD
 } RGBQUAD;
 void Show_Bmpif(FILE* fp);
 FILE* Copy_Bmp(FILE* fp);
-void Write_String(FILE* fp, int offset, int x, int y);
+void Write_String(FILE* fp, int x, int y);
 void print(char ch);
 void Print_Bmp(FILE* fp);
 void Print_Bmp2(FILE* fp);
